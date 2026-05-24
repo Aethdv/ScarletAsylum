@@ -68,6 +68,13 @@ def gitDiffLink(test):
     return OpenBench.utils.path_join(repo, 'compare',
         '{0}..{1}'.format( test.base.sha[:8], test.dev.sha[:8]))
 
+def gitBranchLink(test, side='dev'):
+
+    repo   = test.base_repo if side == 'base' else test.dev_repo
+    branch = test.base.name if side == 'base' else test.dev.name
+
+    return OpenBench.utils.path_join(repo, 'tree', branch)
+
 def shortStatBlock(test):
 
     tri_line   = 'Games: %d W: %d L: %d D: %d' % test.as_nwld()
@@ -425,6 +432,7 @@ register = django.template.Library()
 register.filter('oneDigitPrecision', oneDigitPrecision)
 register.filter('twoDigitPrecision', twoDigitPrecision)
 register.filter('gitDiffLink', gitDiffLink)
+register.filter('gitBranchLink', gitBranchLink)
 register.filter('shortStatBlock', shortStatBlock)
 register.filter('longStatBlock', longStatBlock)
 register.filter('testResultColour', testResultColour)
