@@ -1017,6 +1017,42 @@ td pre {
     cursor: crosshair;
 }
 
+#content .llr-history-graph .llr-fill-pos    { fill: var(--stat-green);  }
+#content .llr-history-graph .llr-fill-yellow { fill: var(--stat-yellow); }
+#content .llr-history-graph .llr-fill-neg    { fill: var(--stat-red);    }
+
+#content .llr-history-graph .llr-endpoint {
+    stroke: var(--bg-1);
+    stroke-width: 1;
+}
+
+#content .llr-history-graph .llr-endpoint-grp {
+    animation: llr-fadein 0.35s ease-out 0.55s both;
+}
+
+#content .llr-history-graph .llr-endpoint-halo {
+    animation: llr-pulse 1.8s ease-out infinite;
+}
+
+#content .llr-history-graph .llr-reveal {
+    transform-origin: 0 0;
+    animation: llr-draw 0.65s ease-out;
+}
+
+@keyframes llr-draw   { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes llr-fadein { from { opacity: 0; }           to { opacity: 1; }           }
+@keyframes llr-pulse {
+    0%   { r: 2.6; opacity: 0.5; }
+    70%  { r: 9;   opacity: 0;   }
+    100% { r: 9;   opacity: 0;   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #content .llr-history-graph .llr-reveal,
+    #content .llr-history-graph .llr-endpoint-grp,
+    #content .llr-history-graph .llr-endpoint-halo { animation: none; }
+}
+
 #content .llr-history-tooltip {
     position: absolute;
     top: 0;
