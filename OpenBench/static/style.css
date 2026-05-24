@@ -432,6 +432,14 @@ body, html, main {
     max-width: 100%;
 }
 
+#content .hero-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: max-content;
+    max-width: 100%;
+}
+
 #content .hero-right {
     display: flex;
     flex-direction: column;
