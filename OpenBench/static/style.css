@@ -205,11 +205,11 @@ body, html, main {
     background-color: var(--bg-panel);
 }
 
-#content .stripes tr:nth-child(odd):not(.table-header) {
+#content .stripes tr:nth-child(odd):not(.table-header):not(.table-spacer):not(.table-spacer-small) {
     background-color: var(--bg-row-a);
 }
 
-#content .stripes tr:nth-child(even):not(.table-header) {
+#content .stripes tr:nth-child(even):not(.table-header):not(.table-spacer):not(.table-spacer-small) {
     background-color: var(--bg-row-b);
 }
 
@@ -226,7 +226,7 @@ body, html, main {
 
 /* Hover rows */
 
-#content .hoverable tr:hover:not(.table-header) {
+#content .hoverable tr:hover:not(.table-header):not(.table-spacer):not(.table-spacer-small) {
     background-color: oklch(28% 0.080 18);
     cursor: pointer;
 }
@@ -258,7 +258,6 @@ body, html, main {
     letter-spacing: 1px;
     text-transform: uppercase;
     background-color: var(--bg-th);
-    border-bottom: 1px solid var(--line);
 }
 
 #content .table-small-header th {
