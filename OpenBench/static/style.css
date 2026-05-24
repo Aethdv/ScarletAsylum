@@ -857,8 +857,7 @@ td pre {
     }
 
     #content #actions {
-        order: -1;
-        margin: 0 0 1rem 0;
+        margin: 1rem 0;
     }
 
     #content #config {
