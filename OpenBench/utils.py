@@ -27,6 +27,7 @@ import os
 import random
 import re
 import requests
+import tempfile
 
 from django.contrib.auth import authenticate
 from django.core.files.base import ContentFile
@@ -160,29 +161,33 @@ def llr_history_path(test_id):
 def spsa_history_path(test_id):
     return os.path.join(MEDIA_ROOT, 'spsa_history', '%d.json' % test_id)
 
-def load_llr_history(test):
-    path = llr_history_path(test.id)
+def _read_llr_history(path):
     if not os.path.exists(path):
-        return [[0, 0.0]]
+        return None
+
+    with open(path) as fin:
+        content = fin.read()
+    if not content.strip():
+        return None
+
+    decoder = json.JSONDecoder()
+    history, idx = decoder.raw_decode(content)
+    while idx < len(content) and content[idx].isspace():
+        idx += 1
+    if idx < len(content):
+        _logger.warning("LLR history %s has trailing data at char %d, salvaging first array", path, idx)
+
+    if not isinstance(history, list) or not all(
+            isinstance(p, list) and 2 <= len(p) <= 3 for p in history):
+        raise ValueError("malformed LLR history in %s" % path)
+
+    return history
+
+def load_llr_history(test):
     try:
-        with open(path) as fin:
-            content = fin.read()
-        if not content:
-            return [[0, 0.0]]
-        decoder = json.JSONDecoder()
-        history, idx = decoder.raw_decode(content)
-        while idx < len(content) and content[idx].isspace():
-            idx += 1
-        if idx < len(content):
-            _logger.warning("LLR history %s has trailing data at char %d, salvaging first array", path, idx)
+        history = _read_llr_history(llr_history_path(test.id))
     except Exception:
-        _logger.warning("Failed to load LLR history %s", path, exc_info=True)
-        return [[0, 0.0]]
-    if not isinstance(history, list):
-        _logger.warning("LLR history %s is not a list (got %s)", path, type(history).__name__)
-        return [[0, 0.0]]
-    if history and not all(isinstance(p, list) and len(p) == 2 for p in history):
-        _logger.warning("LLR history %s has malformed entries, resetting", path)
+        _logger.warning("Failed to load LLR history for test %s", test.id, exc_info=True)
         return [[0, 0.0]]
     return history or [[0, 0.0]]
 
@@ -234,24 +239,42 @@ def downsample_history(history, target_size, is_spsa=False):
     return out
 
 def record_llr_history(test):
-    history = load_llr_history(test)
+    path = llr_history_path(test.id)
+
+    try:
+        history = _read_llr_history(path)
+    except Exception:
+        _logger.warning("Corrupt LLR history %s, backing up and starting fresh", path, exc_info=True)
+        try: os.replace(path, path + '.corrupt')
+        except OSError: pass
+        history = None
+
+    history = history or [[0, 0.0]]
     point = [test.games, round(test.currentllr, 4)]
-    while len(history) > 1 and history[-1][0] > test.games:
-        history.pop()
-    if history and history[-1][0] == point[0]:
+
+    if point[0] < history[-1][0]:
+        return
+    if history[-1][0] == point[0]:
         history[-1] = point
     else:
         history.append(point)
-    if not history or history[0][0] != 0:
+
+    if history[0][0] != 0:
         history.insert(0, [0, 0.0])
+
     if len(history) >= LLR_HISTORY_SIZE * 2:
         history = downsample_history(history, LLR_HISTORY_SIZE, is_spsa=False)
-    path = llr_history_path(test.id)
+
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    tmppath = path + '.tmp'
-    with open(tmppath, 'w') as fout:
-        json.dump(history, fout)
-    os.replace(tmppath, path)
+    fd, tmppath = tempfile.mkstemp(dir=os.path.dirname(path), suffix='.tmp')
+    try:
+        with os.fdopen(fd, 'w') as fout:
+            json.dump(history, fout)
+        os.replace(tmppath, path)
+    except Exception:
+        try: os.unlink(tmppath)
+        except OSError: pass
+        raise
 
 def record_spsa_history(test):
     history = load_spsa_history(test)
