@@ -191,30 +191,37 @@ def load_llr_history(test):
         return [[0, 0.0]]
     return history or [[0, 0.0]]
 
+def _read_spsa_history(path):
+    if not os.path.exists(path):
+        return None
+
+    with open(path) as fin:
+        content = fin.read()
+    if not content.strip():
+        return None
+
+    decoder = json.JSONDecoder()
+    history, idx = decoder.raw_decode(content)
+    while idx < len(content) and content[idx].isspace():
+        idx += 1
+    if idx < len(content):
+        _logger.warning("SPSA history %s has trailing data at char %d, salvaging first object", path, idx)
+
+    if not isinstance(history, dict) or not all(isinstance(v, list) for v in history.values()):
+        raise ValueError("malformed SPSA history in %s" % path)
+
+    return history
+
+def _init_spsa_history(test):
+    return {param.name: [[0, 0.0]] for param in test.spsa_run.parameters.order_by('index')}
+
 def load_spsa_history(test):
-    path = spsa_history_path(test.id)
-    if os.path.exists(path):
-        try:
-            with open(path) as fin:
-                content = fin.read()
-            if not content:
-                pass
-            else:
-                decoder = json.JSONDecoder()
-                history, idx = decoder.raw_decode(content)
-                while idx < len(content) and content[idx].isspace():
-                    idx += 1
-                if idx < len(content):
-                    _logger.warning("SPSA history %s has trailing data at char %d, salvaging first object", path, idx)
-                if isinstance(history, dict):
-                    return history
-                _logger.warning("SPSA history %s is not a dict (got %s)", path, type(history).__name__)
-        except Exception:
-            _logger.warning("Failed to load SPSA history %s", path, exc_info=True)
-    # Initialize with 0 point for all parameters
-    return {
-        param.name: [[0, 0.0]] for param in test.spsa_run.parameters.order_by('index')
-    }
+    try:
+        history = _read_spsa_history(spsa_history_path(test.id))
+    except Exception:
+        _logger.warning("Failed to load SPSA history for test %s", test.id, exc_info=True)
+        return _init_spsa_history(test)
+    return history if history is not None else _init_spsa_history(test)
 
 def get_spsa_history(test):
     return load_spsa_history(test)
@@ -277,28 +284,44 @@ def record_llr_history(test):
         raise
 
 def record_spsa_history(test):
-    history = load_spsa_history(test)
+    path = spsa_history_path(test.id)
+
+    try:
+        history = _read_spsa_history(path)
+    except Exception:
+        _logger.warning("Corrupt SPSA history %s, backing up and starting fresh", path, exc_info=True)
+        try: os.replace(path, path + '.corrupt')
+        except OSError: pass
+        history = None
+
+    if history is None:
+        history = _init_spsa_history(test)
+
     for param in test.spsa_run.parameters.order_by('index'):
         history.setdefault(param.name, [[0, 0.0]])
         if test.games <= history[param.name][-1][0]:
             continue
-        
+
         # Scale movement as % of total allowed range
         denom = param.max_value - param.min_value
         val = (param.value - param.start) / denom if denom != 0.0 else 0.0
         history[param.name].append([test.games, round(val, 5)])
-        
+
         if len(history[param.name]) >= SPSA_HISTORY_SIZE * 2:
             history[param.name] = downsample_history(
                 history[param.name], SPSA_HISTORY_SIZE, is_spsa=True
             )
-    
-    path = spsa_history_path(test.id)
+
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    tmppath = path + '.tmp'
-    with open(tmppath, 'w') as fout:
-        json.dump(history, fout)
-    os.replace(tmppath, path)
+    fd, tmppath = tempfile.mkstemp(dir=os.path.dirname(path), suffix='.tmp')
+    try:
+        with os.fdopen(fd, 'w') as fout:
+            json.dump(history, fout)
+        os.replace(tmppath, path)
+    except Exception:
+        try: os.unlink(tmppath)
+        except OSError: pass
+        raise
 
 
 def extract_option(options, option):
