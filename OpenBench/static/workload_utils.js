@@ -110,9 +110,4 @@ async function fetch_spsa_digest(workload_id) {
 
         tbody.appendChild(tr)
     }
-
-    // Show the data and hide the button
-    tbody.style.display = ''
-    const buttonContainer = document.getElementById('spsa-digest-button-container')
-    buttonContainer.style.display = 'none'
 }

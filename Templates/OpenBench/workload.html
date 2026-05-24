@@ -11,6 +11,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             populate_results({{results|safe}});
             init_llr_history_widgets();
+            {% if type == "TUNE" %}fetch_spsa_digest({{workload.id}});{% endif %}
         });
 
         function init_llr_history_widgets() {
@@ -99,6 +100,8 @@
 
         <div class="hero-left">
 
+          <div class="hero-summary">
+
             {% if type == "TEST" or type == "DATAGEN" %}
                 <pre class="long-statblock" id="long-statblock">{{workload|longStatBlock|linebreaksbr}}</pre>
             {% elif type == "TUNE" %}
@@ -149,6 +152,12 @@
                 {% endif %}
             </div>
 
+          </div>
+
+            {% if type == "TUNE" %}
+                {% include "OpenBench/Blocks/actions.html" %}
+            {% endif %}
+
         </div>
 
         {% if workload.test_mode == "SPRT" %}
@@ -156,60 +165,23 @@
                 <div class="llr-history-label">LLR HISTORY</div>
                 {{workload|llr_history_graph}}
             </div>
+        {% elif type == "TUNE" %}
+            <div class="hero-right">
+                <div class="llr-history-label">SPSA HISTORY (Normalized Range %)</div>
+                {{workload|spsa_history_graph}}
+            </div>
         {% endif %}
 
         </div>
 
     </div>
 
-    <div id="actions">
-
-        {% if workload.upload_pgns != "FALSE" or type == "TUNE" %}
-            <div class="anchor-container action-row-secondary">
-                {% if workload.upload_pgns != "FALSE" %}
-                    <a class="anchorbutton btn-blue" href="/api/pgns/{{workload.id}}/">Download PGN</a>
-                {% endif %}
-                {% if type == "TUNE" %}
-                    <a class="anchorbutton btn-blue" onclick="copy_spsa_inputs({{workload.id}})">SPSA Inputs</a>
-                    <a class="anchorbutton btn-blue" onclick="copy_spsa_outputs({{workload.id}})">SPSA Outputs</a>
-                {% endif %}
-            </div>
-        {% endif %}
-
-        <form method="POST" action="/{{type|lower}}/{{workload.id}}/MODIFY/">
-            {% csrf_token %}
-            <div class="form">
-                <div class="col-full">
-                    <div class="row">
-                        <label for="priority">Priority</label>
-                        <input value="{{workload.priority}}" id="priority" name="priority">
-                    </div>
-
-                    <div class="row">
-                        <label for="throughput">Throughput</label>
-                        <input value="{{workload.throughput}}" id="throughput" name="throughput">
-                    </div>
-
-                    {% if type == "TEST" or type == "DATAGEN" %}
-                        <div class="row">
-                            <label for="workload_size">Workload Size</label>
-                            <input value="{{workload.workload_size}}" id="workload_size" name="workload_size">
-                        </div>
-                    {% endif %}
-
-                    {% if profile.approver or profile.user.username == workload.author %}
-                        <input class="anchorbutton btn-blue w-100" type="submit" name="submit" value="Modify">
-                    {% else %}
-                        <input class="anchorbutton btn-disabled w-100" type="submit" name="submit" value="Modify">
-                    {% endif %}
-                </div>
-            </div>
-        </form>
-
-    </div>
+    {% if type != "TUNE" %}
+        {% include "OpenBench/Blocks/actions.html" %}
+    {% endif %}
 
     {% if type == "TUNE" %}
-        <div id="parameters" class="w-100 mt-3">
+        <div id="parameters" class="w-100 mt-3 mb-3">
             <table class="stripes wrappable">
                 <thead>
                     <tr class="table-header">
@@ -224,21 +196,9 @@
                         <th>R_end</th>
                     </tr>
                 </thead>
-                <tbody id="spsa-digest-button-container">
-                    <tr>
-                        <td colspan="9" style="padding: 0;">
-                            <button class="w-100 anchorbutton btn-blue" type="submit" onclick="fetch_spsa_digest({{workload.id}})">Show SPSA Digest</button>
-                        </td>
-                    </tr>
-                </tbody>
-                <tbody id="spsa-digest-body-container" style="display: none;">
+                <tbody id="spsa-digest-body-container">
                 </tbody>
             </table>
-
-            <div class="mt-4">
-                <div class="llr-history-label">SPSA HISTORY (Normalized Range %)</div>
-                {{workload|spsa_history_graph}}
-            </div>
         </div>
     {% endif %}
 
