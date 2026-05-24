@@ -319,6 +319,22 @@ def llr_history_graph(test, width=320, height=112):
                         % (cls, L, y, width - R, y))
 
     last = pts[-1]
+    last_band = 'pos' if last['l'] >= 0.0 else ('yellow' if last['v'] else 'neg')
+    live = not test.finished
+    clip_id = 'llr-reveal-%d' % test.id
+
+    paths = (polyline('llr-path llr-path-pos', segs['pos'])
+           + polyline('llr-path llr-path-yellow', segs['yellow'])
+           + polyline('llr-path llr-path-neg', segs['neg']))
+
+    halo = ('<circle class="llr-endpoint-halo llr-fill-%s" cx="%.2f" cy="%.2f" r="2.6"/>'
+            % (last_band, last['x'], last['y'])) if live else ''
+    endpoint = (
+        '<g class="llr-endpoint-grp">%s'
+        '<circle class="llr-endpoint llr-fill-%s" cx="%.2f" cy="%.2f" r="2.6"/>'
+        '</g>'
+    ) % (halo, last_band, last['x'], last['y'])
+
     title = 'LLR %.2f after %d games' % (test.currentllr, test.games)
     history_json = html.escape(json.dumps(pts, separators=(',', ':')))
 
@@ -330,9 +346,11 @@ def llr_history_graph(test, width=320, height=112):
         '<div class="llr-history-plot">'
         '<svg class="llr-history-graph" viewBox="0 0 %d %d" width="%d" height="%d" '
         'role="img" aria-label="%s">'
-        '<title>%s</title>'
+        '<defs><clipPath id="%s"><rect class="llr-reveal" x="0" y="0" width="%d" height="%d"/></clipPath></defs>'
         '<rect class="llr-bg" x="0" y="0" width="%d" height="%d" rx="5"/>'
-        '%s%s%s%s%s'
+        '%s%s'
+        '<g clip-path="url(#%s)">%s</g>'
+        '%s'
         '<line class="llr-hover-line" x1="%.2f" y1="%d" x2="%.2f" y2="%d"/>'
         '<circle class="llr-hover-point" cx="%.2f" cy="%.2f" r="3"/>'
         '<rect class="llr-hitbox" x="0" y="0" width="%d" height="%d" rx="5"/>'
@@ -345,12 +363,12 @@ def llr_history_graph(test, width=320, height=112):
         history_json,
         y_max, y_min,
         width, height, width, height,
-        html.escape(title), html.escape(title),
+        html.escape(title),
+        clip_id, width, height,
         width, height,
         ''.join(grid), ''.join(guides),
-        polyline('llr-path llr-path-pos', segs['pos']),
-        polyline('llr-path llr-path-yellow', segs['yellow']),
-        polyline('llr-path llr-path-neg', segs['neg']),
+        clip_id, paths,
+        endpoint,
         last['x'], T, last['x'], height - B,
         last['x'], last['y'],
         width, height,
