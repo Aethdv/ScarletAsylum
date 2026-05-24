@@ -39,8 +39,10 @@
                 function show(p) {
                     line.setAttribute('x1', p.x); line.setAttribute('x2', p.x);
                     dot.setAttribute('cx', p.x); dot.setAttribute('cy', p.y);
-                    dot.classList.toggle('pos', p.l >= 0);
-                    dot.classList.toggle('neg', p.l <  0);
+                    var band = p.l >= 0 ? 'pos' : (p.v ? 'yellow' : 'neg');
+                    dot.classList.toggle('pos',    band === 'pos');
+                    dot.classList.toggle('yellow', band === 'yellow');
+                    dot.classList.toggle('neg',    band === 'neg');
                     line.classList.add('active'); dot.classList.add('active');
                     tip.textContent = p.g.toLocaleString() + ' games  LLR ' + p.l.toFixed(2);
                     tip.classList.add('active');
@@ -55,7 +57,7 @@
 
                 function hide() {
                     line.classList.remove('active');
-                    dot.classList.remove('active', 'pos', 'neg');
+                    dot.classList.remove('active', 'pos', 'yellow', 'neg');
                     tip.classList.remove('active');
                 }
 

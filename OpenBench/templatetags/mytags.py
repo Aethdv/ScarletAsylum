@@ -225,24 +225,24 @@ def llr_history_graph(test, width=320, height=112):
         return ''
 
     history = list(OpenBench.utils.load_llr_history(test))
-    
+    cur_verdict = int(test.wins >= test.losses)
+
     # Ensure graph starts at 0,0
     if not history or history[0][0] != 0:
         history.insert(0, [0, 0.0])
 
-    # Trim stray points ahead of current DB state, then ensure current point is last
-    while len(history) > 1 and history[-1][0] > test.games:
-        history.pop()
+    # Ensure the present is the last point. The series is append-only now, so
+    # no backwards trimming here either — see record_llr_history.
     if history[-1][0] != test.games or history[-1][1] != test.currentllr:
-        history.append([test.games, test.currentllr])
+        history.append([test.games, test.currentllr, cur_verdict])
 
     x_max = max(max(p[0] for p in history), 1)
 
     # ──── Symmetry and Boundary Logic ────
-    # We want 0.0 to be the dead-center. 
+    # We want 0.0 to be the dead-center.
     # Find the largest absolute extent including current bounds and historical data.
     obs_max = max(abs(test.lowerllr), abs(test.upperllr), max(abs(p[1]) for p in history))
-    
+
     # Add a minimum scale and some padding
     extent = max(obs_max * 1.15, 0.5)
     y_min, y_max = -extent, extent
@@ -253,34 +253,45 @@ def llr_history_graph(test, width=320, height=112):
     sx = lambda v: L + iw * (v / x_max)
     sy = lambda v: T + ih * (1.0 - (v - y_min) / (y_max - y_min))
 
-    pts = [{'g': g, 'l': round(l, 4), 'x': round(sx(g), 2), 'y': round(sy(l), 2)}
-           for g, l in history]
+    def verdict(p):
+        return p[2] if len(p) >= 3 else cur_verdict
+
+    pts = [{'g': p[0], 'l': round(p[1], 4), 'v': verdict(p),
+            'x': round(sx(p[0]), 2), 'y': round(sy(p[1]), 2)} for p in history]
+
+    def band(p):
+        if p['l'] >= 0.0: return 'pos'
+        return 'yellow' if p['v'] else 'neg'
 
     def cross(a, b):
         denom = (b['l'] - a['l'])
         if abs(denom) < 1e-7: return None
         r = -a['l'] / denom
-        return {'g': a['g'] + r * (b['g'] - a['g']), 'l': 0.0,
+        return {'g': a['g'] + r * (b['g'] - a['g']), 'l': 0.0, 'v': b['v'],
                 'x': round(a['x'] + r * (b['x'] - a['x']), 2),
                 'y': round(sy(0.0), 2)}
 
-    pos_segs, neg_segs = [], []
+    segs = {'pos': [], 'yellow': [], 'neg': []}
     seg = [pts[0]]
-    seg_pos = pts[0]['l'] >= 0.0
+    cat = band(pts[0])
     for i in range(1, len(pts)):
         a, b = pts[i - 1], pts[i]
-        b_pos = b['l'] >= 0.0
-        if b_pos == seg_pos:
+        b_cat = band(b)
+        if b_cat == cat:
             seg.append(b)
             continue
-        c = cross(a, b)
-        if c: seg.append(c)
-        if len(seg) >= 2:
-            (pos_segs if seg_pos else neg_segs).append(seg)
-        seg = [c, b] if c else [b]
-        seg_pos = b_pos
+
+        if (a['l'] >= 0.0) != (b['l'] >= 0.0):
+            c = cross(a, b)
+            if c: seg.append(c)
+            if len(seg) >= 2: segs[cat].append(seg)
+            seg = [c, b] if c else [b]
+        else:
+            if len(seg) >= 2: segs[cat].append(seg)
+            seg = [a, b]
+        cat = b_cat
     if len(seg) >= 2:
-        (pos_segs if seg_pos else neg_segs).append(seg)
+        segs[cat].append(seg)
 
     def polyline(cls, segments):
         return ''.join(
@@ -321,7 +332,7 @@ def llr_history_graph(test, width=320, height=112):
         'role="img" aria-label="%s">'
         '<title>%s</title>'
         '<rect class="llr-bg" x="0" y="0" width="%d" height="%d" rx="5"/>'
-        '%s%s%s%s'
+        '%s%s%s%s%s'
         '<line class="llr-hover-line" x1="%.2f" y1="%d" x2="%.2f" y2="%d"/>'
         '<circle class="llr-hover-point" cx="%.2f" cy="%.2f" r="3"/>'
         '<rect class="llr-hitbox" x="0" y="0" width="%d" height="%d" rx="5"/>'
@@ -337,8 +348,9 @@ def llr_history_graph(test, width=320, height=112):
         html.escape(title), html.escape(title),
         width, height,
         ''.join(grid), ''.join(guides),
-        polyline('llr-path llr-path-pos', pos_segs),
-        polyline('llr-path llr-path-neg', neg_segs),
+        polyline('llr-path llr-path-pos', segs['pos']),
+        polyline('llr-path llr-path-yellow', segs['yellow']),
+        polyline('llr-path llr-path-neg', segs['neg']),
         last['x'], T, last['x'], height - B,
         last['x'], last['y'],
         width, height,

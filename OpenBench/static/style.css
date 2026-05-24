@@ -983,8 +983,9 @@ td pre {
     stroke-width: 1.8;
 }
 
-#content .llr-history-graph .llr-path-pos { stroke: var(--stat-green); }
-#content .llr-history-graph .llr-path-neg { stroke: var(--stat-red);   }
+#content .llr-history-graph .llr-path-pos    { stroke: var(--stat-green);  }
+#content .llr-history-graph .llr-path-yellow { stroke: var(--stat-yellow); }
+#content .llr-history-graph .llr-path-neg    { stroke: var(--stat-red);    }
 
 #content .llr-history-graph .llr-hover-line {
     stroke: var(--fg-cream);
@@ -1007,8 +1008,9 @@ td pre {
     opacity: 0.9;
 }
 
-#content .llr-history-graph .llr-hover-point.pos { stroke: var(--stat-green); }
-#content .llr-history-graph .llr-hover-point.neg { stroke: var(--stat-red);   }
+#content .llr-history-graph .llr-hover-point.pos    { stroke: var(--stat-green);  }
+#content .llr-history-graph .llr-hover-point.yellow { stroke: var(--stat-yellow); }
+#content .llr-history-graph .llr-hover-point.neg    { stroke: var(--stat-red);    }
 
 #content .llr-history-graph .llr-hitbox {
     fill: transparent;

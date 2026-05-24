@@ -250,7 +250,7 @@ def record_llr_history(test):
         history = None
 
     history = history or [[0, 0.0]]
-    point = [test.games, round(test.currentllr, 4)]
+    point = [test.games, round(test.currentllr, 4), int(test.wins >= test.losses)]
 
     if point[0] < history[-1][0]:
         return
