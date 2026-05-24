@@ -88,10 +88,10 @@
     <div class="workload-hero">
 
         <h3 class="branch-title">
-            <a class="branch-name" href="{{workload.dev_repo}}">{{workload.dev.name|prettyName}}</a>
+            <a class="branch-name" href="{{workload|gitBranchLink:'dev'}}">{{workload.dev.name|prettyName}}</a>
             {% if type == "TEST" or type == "DATAGEN" %}
                 <span class="diff-vs">vs</span>
-                <a class="branch-name" href="{{workload.base_repo}}">{{workload.base.name|prettyName}}</a>
+                <a class="branch-name" href="{{workload|gitBranchLink:'base'}}">{{workload.base.name|prettyName}}</a>
             {% endif %}
             <a class="diff-link" href="{{workload|gitDiffLink}}">diff</a>
         </h3>
