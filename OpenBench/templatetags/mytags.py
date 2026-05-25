@@ -317,6 +317,9 @@ def llr_history_graph(test, width=320, height=112):
         y = sy(v)
         guides.append('<line class="%s" x1="%d" y1="%.2f" x2="%d" y2="%.2f"/>'
                         % (cls, L, y, width - R, y))
+        if cls == 'llr-bound':
+            guides.append('<text class="llr-bound-label" x="%d" y="%.2f">%+.2f</text>'
+                          % (L + 3, y + (11.0 if v > 0 else -3.5), v))
 
     last = pts[-1]
     last_band = 'pos' if last['l'] >= 0.0 else ('yellow' if last['v'] else 'neg')
@@ -341,7 +344,7 @@ def llr_history_graph(test, width=320, height=112):
     svg = (
         '<div class="llr-history-widget" data-history="%s">'
         '<div class="llr-history-chart">'
-        '<div class="llr-history-yaxis"><div>%.2f</div><div>0.00</div><div>%.2f</div></div>'
+        '<div class="llr-history-yaxis"><div></div><div>0.00</div><div></div></div>'
         '<div class="llr-history-main">'
         '<div class="llr-history-plot">'
         '<svg class="llr-history-graph" viewBox="0 0 %d %d" width="%d" height="%d" '
@@ -361,7 +364,6 @@ def llr_history_graph(test, width=320, height=112):
         '</div></div></div>'
     ) % (
         history_json,
-        y_max, y_min,
         width, height, width, height,
         html.escape(title),
         clip_id, width, height,

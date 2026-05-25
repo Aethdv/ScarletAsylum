@@ -408,7 +408,7 @@ body, html, main {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    margin-bottom: 1.2rem;
+    margin-bottom: 0.7rem;
 }
 
 #content .workload-hero .branch-title {
@@ -638,6 +638,10 @@ body, html, main {
 
 #content #actions .anchor-container.action-row-secondary {
     margin-top: 0.1rem;
+}
+
+#content .hero-left #actions .action-row-secondary > .anchorbutton {
+    flex: 1 1 0;
 }
 
 #content #actions .form {
@@ -969,6 +973,13 @@ td pre {
     stroke: oklch(72% 0.180 25 / 0.7);
     stroke-dasharray: 4 3;
     stroke-width: 1;
+}
+
+#content .llr-history-graph .llr-bound-label {
+    fill: oklch(72% 0.090 25 / 0.75);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 8px;
+    font-variant-numeric: tabular-nums;
 }
 
 #content .llr-history-graph .llr-zero {
