@@ -1017,11 +1017,12 @@ td pre {
     cursor: crosshair;
 }
 
-#content .llr-history-graph .llr-fill-pos    { fill: var(--stat-green);  }
-#content .llr-history-graph .llr-fill-yellow { fill: var(--stat-yellow); }
-#content .llr-history-graph .llr-fill-neg    { fill: var(--stat-red);    }
+#content .llr-history-graph .llr-fill-pos    { color: var(--stat-green);  }
+#content .llr-history-graph .llr-fill-yellow { color: var(--stat-yellow); }
+#content .llr-history-graph .llr-fill-neg    { color: var(--stat-red);    }
 
 #content .llr-history-graph .llr-endpoint {
+    fill: currentColor;
     stroke: var(--bg-1);
     stroke-width: 1;
 }
@@ -1031,7 +1032,13 @@ td pre {
 }
 
 #content .llr-history-graph .llr-endpoint-halo {
-    animation: llr-pulse 1.8s ease-out infinite;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.3;
+    vector-effect: non-scaling-stroke;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: llr-pulse 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 
 #content .llr-history-graph .llr-reveal {
@@ -1041,10 +1048,14 @@ td pre {
 
 @keyframes llr-draw   { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 @keyframes llr-fadein { from { opacity: 0; }           to { opacity: 1; }           }
-@keyframes llr-pulse {
-    0%   { r: 2.6; opacity: 0.5; }
-    70%  { r: 9;   opacity: 0;   }
-    100% { r: 9;   opacity: 0;   }
+@keyframes llr-pulse  {
+    0%   { transform: scale(1);   opacity: 0.5; }
+    70%  {                        opacity: 0;   }
+    100% { transform: scale(2.4); opacity: 0;   }
+}
+
+@media (color-gamut: p3) {
+    #content .llr-history-graph .llr-endpoint-halo { opacity: 0.6; stroke-width: 1.1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
