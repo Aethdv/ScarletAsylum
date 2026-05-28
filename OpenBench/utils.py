@@ -19,6 +19,7 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 import datetime
+import fcntl
 import hashlib
 import json
 import logging
@@ -28,6 +29,7 @@ import random
 import re
 import requests
 import tempfile
+import contextlib
 
 from django.contrib.auth import authenticate
 from django.core.files.base import ContentFile
@@ -245,9 +247,26 @@ def downsample_history(history, target_size, is_spsa=False):
     out.append(history[-1])
     return out
 
+@contextlib.contextmanager
+def _history_lock(path):
+    # Serialise the whole read-modify-write. SQLite's select_for_update is a
+    # no-op, so two concurrent result submissions would otherwise both load the
+    # same file and the slower writer would clobber the faster one's appends —
+    # exactly the chunks of vanished points that show as straight line segments.
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    lockfd = os.open(path + '.lock', os.O_CREAT | os.O_RDWR, 0o644)
+    try:
+        fcntl.flock(lockfd, fcntl.LOCK_EX)
+        yield
+    finally:
+        os.close(lockfd)
+
 def record_llr_history(test):
     path = llr_history_path(test.id)
+    with _history_lock(path):
+        _record_llr_history_locked(test, path)
 
+def _record_llr_history_locked(test, path):
     try:
         history = _read_llr_history(path)
     except Exception:
@@ -285,7 +304,10 @@ def record_llr_history(test):
 
 def record_spsa_history(test):
     path = spsa_history_path(test.id)
+    with _history_lock(path):
+        _record_spsa_history_locked(test, path)
 
+def _record_spsa_history_locked(test, path):
     try:
         history = _read_spsa_history(path)
     except Exception:
